@@ -1,0 +1,185 @@
+contract Wallet//создаем кошельки
+
+{
+
+mapping (address => uint) public balances;//позволяет создавать массив данных
+
+// в котором адрес автоматически переводится в номер элемента массива
+
+mapping (address => Holder) public holder;// позволяет вести массив информации
+
+//о держателе кошелька
+
+struct Holder//информация о держателе кошелька
+
+{
+
+address owner;
+
+string Name;
+
+int IdN_country;
+
+uint64 TIN;
+
+}
+
+function Create(address sender, string Name, int ID, uint64 TIN) returns (address owner)
+
+{
+
+holder[sender]=Holder(msg.sender,Name,ID,TIN);// информация о держателе кошелька
+
+balances[msg.sender] += msg.value;//задаем баланс кошелька
+
+}
+
+function queryBalance(address addr) constant returns (uint balance)
+
+{
+
+return balances[msg.sender];//проверяем баланс
+
+}
+
+}
+
+contract Transaction // функция передачи данных
+
+{
+
+bool ac;
+
+mapping (address => Agreement) agree;//массив договоров
+
+struct Agreement//структура - договор
+
+{
+
+string Agr_Numb;
+
+string Org_Name_1;
+
+int IdN_country_1;
+
+uint64 TIN_1;
+
+string Org_Name_2;
+
+int IdN_country_2;
+
+uint64 TIN_2;
+
+}
+
+// Согласование
+
+event accept(address from, address to);//событие, которое отображаться будет в логе при появлении
+
+function acceptance(bool us1, bool us2) returns (bool ac)// обмен данными
+
+{
+
+if(us1==true && us2==true)
+
+ac=true;
+
+else
+
+{
+
+ac=false;
+
+}
+
+return ac;
+
+}
+
+function forming(address from, address to, string Agr_Numb, string Org_Name_1,
+
+int IdN_country_1, uint64 TIN_1, string Org_Name_2, int IdN_country_2, uint64 TIN_2, bool ac)// создаем контракт
+
+{
+
+if (ac==true)
+
+agree[msg.sender]=Agreement(Agr_Numb, Org_Name_1, IdN_country_1,
+
+TIN_1, Org_Name_2, IdN_country_2, TIN_2);//создаем структуру контракт с предложенными данными
+
+}
+
+}
+
+contract Agreement // сам верифицирующий договор
+
+{
+
+mapping (address => Verify) ver;// массив договоров
+
+struct Verify//структура договора
+
+{
+
+string Agr_Numb;//Номер
+
+string Org_Name_1;//имя 1-й организации
+
+int IdN_country_1;//код страны
+
+uint64 TIN_1;//ТИН
+
+string Org_Name_2;//имя 2-й организации
+
+int IdN_country_2;//код 2-й страны
+
+uint64 TIN_2;//ТИН 2-й организации
+
+address addr1;//
+
+address addr2;
+
+bool condition;//состояние договора
+
+}
+
+function chan_con(address from, bool res) returns (bool condition)//формирование состояния контракта
+
+{
+
+if (from==msg.sender && res==true)
+
+return true;
+
+}
+
+function form(address from, address to, string Agr_Numb, string Org_Name_1,
+
+int IdN_country_1, uint64 TIN_1, string Org_Name_2, int IdN_country_2, uint64 TIN_2, bool condition) returns (address addr)
+
+{
+
+ver[msg.sender]=Verify(Agr_Numb, Org_Name_1, IdN_country_1, TIN_1, Org_Name_2,
+
+IdN_country_2, TIN_2, from, to, condition);
+
+addr=this;//вызываем адрес контракта
+
+from.send(msg.value);//рассылаем значения
+
+to.send(msg.value);//рассылаем значения
+
+}
+
+function check(address addr) returns (bool res)//проверяем состояние контракта
+
+{
+
+if (ver[addr].condition==true && (ver[addr].addr1==addr || ver[addr].addr2==addr))
+
+return true;
+
+}
+
+} 
